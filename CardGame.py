@@ -1,6 +1,5 @@
 # CardGame.py
 import random, copy
-from collections import defaultdict
 from Sandbag import Sandbag
 
 class CardGame:
@@ -8,11 +7,12 @@ class CardGame:
     def __init__(self, deck, MAX_ENERGY):
         self.original_deck = deck
         self.sandbag = Sandbag()
-        self.MAX_ENERGY = MAX_ENERGY
+        self.MAX_ENERGY_ORIGINAL = MAX_ENERGY
         self.reset_game()
 
     def reset_game(self):
         self.deck = copy.deepcopy(self.original_deck)
+        self.MAX_ENERGY = self.MAX_ENERGY_ORIGINAL
         random.shuffle(self.deck)
         self.hand = []
         self.discard_pile = []
@@ -20,7 +20,6 @@ class CardGame:
         self.energy = self.MAX_ENERGY
         self.total_damage = 0
         self.player_strength = 0
-        self.card_usage_damage = defaultdict(int)
         self.turn_num = 1
 
     def start_turn(self):
@@ -56,7 +55,6 @@ class CardGame:
                     self.sandbag.apply_vulnerable(card.vulnerable_turns)  # 引数のsandbagで適用
                 # ダメージの加算
                 self.total_damage += damage
-                self.card_usage_damage[card.name] += damage
 
                 # カードを手札から捨て札へ移動
                 # カードの属性で同じものを削除
