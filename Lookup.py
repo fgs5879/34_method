@@ -1,6 +1,5 @@
 import CardGame
-from utilies import get_playable_cards
-import copy
+from utilies import get_playable_cards, duplicate_game
 def lookup(game:CardGame, used_card, lookahead_turns):
     """
     ゲームの状態と選択されたカードを受け取り、
@@ -28,8 +27,8 @@ def lookup(game:CardGame, used_card, lookahead_turns):
     #len(playable_cards) <= 1だと、playable_cards = ["end_turn"]であり、ターンエンドするしかない
     lookuped_damage_list = []
     for played_card in playable_cards:
-        simulate_game = copy.deepcopy(game)
-        lookuped_damage_list.append((lookup(simulate_game, played_card, lookahead_turns), played_card))
+        simulated_game = duplicate_game(game)
+        lookuped_damage_list.append((lookup(simulated_game, played_card, lookahead_turns), played_card))
     
     max_damage, best_choice = max(lookuped_damage_list, key=lambda x: x[0])
     return lookup(game, best_choice, lookahead_turns)
