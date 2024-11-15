@@ -5,34 +5,32 @@ from utilies import get_playable_cards, duplicate_game
 from CardGame import CardGame
 from tqdm import tqdm
 import concurrent.futures
-def concurrent_full_search(game:CardGame, num_turns:int, trials:int, lookahead_turns:int):
+def concurrent_full_search(game:CardGame, trials:int, lookahead_turns:int):
     """並列処理を行う"""
     start_time = time.time()
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            # `executor.map` で full_search_trial を実行
-            results = list(
-                tqdm(
-                    executor.map(
-                        full_search_trial,
-                        [game] * trials,            # game を試行回数分コピー
-                        [num_turns] * trials,       # num_turns を試行回数分コピー
-                        range(trials),              # 各試行の trial_num
-                        [lookahead_turns] * trials  # lookahead_turns を試行回数分コピー
-                    ),
-                    total=trials, desc="Progress"
-                )
+        # `executor.map` で full_search_trial を実行
+        results = list(
+            tqdm(
+                executor.map(
+                    full_search_trial,
+                    [game] * trials,            # game を試行回数分コピー
+                    range(trials),              # 各試行の trial_num
+                    [lookahead_turns] * trials  # lookahead_turns を試行回数分コピー
+                ),
+                total=trials, desc="Progress"
             )
+        )
     
     # results を展開
     battle_logs = [result[0] for result in results]  # log_lines を収集
     each_trial_damage_list = [result[1] for result in results]  # each_turn_damage_list を収集
     
-    with open("battle_log.txt", "w",encoding="utf-8") as file:
+    with open("logfile/battle_log.txt", "w",encoding="utf-8") as file:
         flat_battle_logs = [line for log in battle_logs for line in log]
         file.writelines(flat_battle_logs)
 
-    turn_based_damage_list = [[] for _ in range(num_turns)]
+    turn_based_damage_list = [[] for _ in range(game.END_TURN_NUM)]
 
     for trial_damage in each_trial_damage_list:
         for turn_index, damage in enumerate(trial_damage):
@@ -48,7 +46,7 @@ def concurrent_full_search(game:CardGame, num_turns:int, trials:int, lookahead_t
     
     #基本的な情報
     statistics_lines.append("統計表示")
-    statistics_lines.append(f"試行回数: {trials}\nターン数:{num_turns}\n最大エナジー:{game.energy}\n")  # 最初に基本的な情報を出力
+    statistics_lines.append(f"試行回数: {trials}\nターン数:{game.END_TURN_NUM}\n最大エナジー:{game.energy}\n")  # 最初に基本的な情報を出力
     battle_time = time.time()-start_time
     # 時間、分、秒に変換
     hours = int(battle_time // 3600)  # 時間の部分
@@ -80,7 +78,7 @@ def concurrent_full_search(game:CardGame, num_turns:int, trials:int, lookahead_t
         mean_damage_list.append(mean_damage)
         population_variance_list.append(population_variance)
         population_std_dev_list.append(population_std_dev)
-    with open("statistics.txt", "w",encoding="utf-8") as file:
+    with open("logfile/statistics.txt", "w",encoding="utf-8") as file:
         file.writelines(statistics_lines)
     # グラフの作成
     plt.plot(turn_indices, mean_damage_list, label="平均ダメージ", marker='o', color='black')
@@ -112,18 +110,18 @@ def concurrent_full_search(game:CardGame, num_turns:int, trials:int, lookahead_t
             
 
 
-def full_search_trial(game:CardGame, num_turns:int, trial:int, lookahead_turns:int):
+def full_search_trial(game:CardGame, trial:int, lookahead_turns:int):
     #統計用に各ターンごとに与えたダメージの合計を記録
     each_turn_damage_list = []
     #ログ記録用のリスト
     log_lines = []        
     #それぞれのtrialごとにゲームを作る
-    this_game = CardGame(game.deck, game.MAX_ENERGY)
+    this_game = CardGame(game.deck, game.MAX_ENERGY, game.END_TURN_NUM)
     log_lines.append(f"\n=== 1 ターン目開始===\n")
     this_game.start_turn()
     
     #指定ターン超過までwhileループし戦闘継続
-    while this_game.turn_num <= num_turns:
+    while this_game.turn_num <= game.END_TURN_NUM:
         #手札表示
         log_lines.append("手札: " + ", ".join([card.display_name for card in this_game.hand]) + "\n")
         #使用可能カードのリスト取得(end_turnを含む)
@@ -133,20 +131,25 @@ def full_search_trial(game:CardGame, num_turns:int, trial:int, lookahead_turns:i
         lookuped_damage_list = []
         #それぞれの選択ごとにゲームの先読みをする。
         for played_card in playable_cards:
-            lookuped_damage_list.append((lookup(duplicate_game(this_game), played_card, lookahead_turns),played_card))
-        
+            lookuped_damage_list.append((lookup(duplicate_game(this_game), played_card, lookahead_turns+this_game.turn_num),played_card))
+        for l, j in lookuped_damage_list:
+            if(j  == "end_turn"):
+                log_lines.append(str(l)+":"+str(j))
+            else:
+                log_lines.append(str(l)+":"+str(j.display_name))
+        log_lines.append("\n")
         max_damage, best_choice = max(lookuped_damage_list, key=lambda x: x[0])
         # 'best_choice'を実行する
         if best_choice == "end_turn":
             each_turn_damage_list.append(this_game.total_damage)
             this_game.end_turn()
-            if this_game.turn_num > num_turns:
+            if this_game.turn_num > game.END_TURN_NUM:
                 log_lines.append(f"\n=== 試行 {trial+1} 回目終了===\n与えた合計ダメージ:{this_game.total_damage}\n")
             else:
                 this_game.start_turn()
                 log_lines.append(f"\n=== これまでのダメージ:{this_game.total_damage}===")
-                if(this_game.sandbag.vulnerable>0):
-                    log_lines.append(f"\n=== 弱体:{this_game.sandbag.vulnerable}===")
+                if(this_game.e_vulnerable>0):
+                    log_lines.append(f"\n=== 弱体:{this_game.e_vulnerable}===")
                 if(this_game.player_strength>0):
                     log_lines.append(f"\n=== 筋力:{this_game.player_strength}===\n")
                 log_lines.append(f"\n==={this_game.turn_num}ターン目開始===\n")  # ターン終了を記録

@@ -1,13 +1,12 @@
 # CardGame.py
-import random, copy
-from Sandbag import Sandbag
+import random, copy, math
 
 class CardGame:
 
-    def __init__(self, deck, MAX_ENERGY):
+    def __init__(self, deck, MAX_ENERGY, END_TURN_NUM):
         self.original_deck = deck
-        self.sandbag = Sandbag()
         self.MAX_ENERGY_ORIGINAL = MAX_ENERGY
+        self.END_TURN_NUM = END_TURN_NUM
         self.reset_game()
 
     def reset_game(self):
@@ -20,8 +19,18 @@ class CardGame:
         self.energy = self.MAX_ENERGY
         self.total_damage = 0
         self.player_strength = 0
+        self.e_vulnerable = 0 
         self.turn_num = 1
 
+    def apply_vulnerable(self, turns):
+        """指定されたターン数だけvulnerable状態を追加"""
+        self.e_vulnerable += turns
+
+    def calculate_damage(self, damage):
+        """vulnerable状態を考慮してダメージを計算"""
+        if self.e_vulnerable > 0:
+            return math.floor(damage * 1.5)
+        return damage
     def start_turn(self):
         self.energy = self.MAX_ENERGY
         self.draw_card(5)
@@ -49,10 +58,10 @@ class CardGame:
             # ダメージ計算
             damage = 0
             if card.card_type == 'attack':
-                damage = self.sandbag.calculate_damage(card.damage + self.player_strength)  # 引数のsandbagで計算
-                # vulnerableターン数がある場合、sandbagに適用
+                damage = self.calculate_damage(card.damage + self.player_strength) 
+                # カードにvulnerableターン数がある場合に適用
                 if card.vulnerable_turns > 0:
-                    self.sandbag.apply_vulnerable(card.vulnerable_turns)  # 引数のsandbagで適用
+                    self.apply_vulnerable(card.vulnerable_turns) 
                 # ダメージの加算
                 self.total_damage += damage
 
@@ -85,7 +94,9 @@ class CardGame:
                 self.draw_card(card.draw_num)
 
     def end_turn(self):
-        self.sandbag.end_turn()
+        #敵に弱体があれば-1する
+        if(self.e_vulnerable):
+            self.e_vulnerable -=1
         for card in self.hand[:]:
             if card.name == "Ascender's_Bane":
                 self.hand.remove(card)

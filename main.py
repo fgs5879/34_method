@@ -13,10 +13,10 @@ def main():
     [Card("Ascender's_Bane",display_name="アセンダーの災厄", usable=False, card_type='curse')]  # Ascender's Bane 1枚
     )
     # 初期ゲーム状態を作成
-    game = CardGame(deck, MAX_ENERGY=3)
+    game = CardGame(deck, MAX_ENERGY=3, END_TURN_NUM=3)
     
     #シミュレート
-    Simulation.concurrent_full_search(game, num_turns=3, trials=30, lookahead_turns=2)
+    Simulation.concurrent_full_search(game, trials=1000, lookahead_turns=1)
 
 if __name__ == "__main__":
     main()

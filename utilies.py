@@ -31,10 +31,11 @@ def remove_duplicate_cards(card_list):
 
 def duplicate_game(game):
     """gameを複製する"""
-    duplicated_game = copy.deepcopy(game)
-    # # リストやオブジェクトを手動で初期化（シャローコピーではなく、ディープコピー）
-    # duplicated_game.hand = copy.deepcopy(game.hand)
-    # duplicated_game.discard_pile = copy.deepcopy(game.discard_pile)
-    # duplicated_game.exhaust_pile = copy.deepcopy(game.exhaust_pile)
-    # duplicated_game.deck = copy.deepcopy(game.deck)
+    # duplicated_game = copy.deepcopy(game)
+    # リストやオブジェクトを手動で初期化（シャローコピーではなく、ディープコピー）
+    duplicated_game = copy.copy(game)
+    duplicated_game.hand = game.hand[:]
+    duplicated_game.discard_pile = game.discard_pile[:]
+    duplicated_game.exhaust_pile = game.exhaust_pile[:]
+    duplicated_game.deck = game.deck[:]
     return duplicated_game

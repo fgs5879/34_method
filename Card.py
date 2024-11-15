@@ -12,6 +12,3 @@ class Card:
         self.vulnerable_turns = vulnerable_turns  # vulnerableターン数（攻撃時使用）
         self.draw_num = draw_num #ドロー数
         self.usable = usable #使用可能かどうか
-
-    def __repr__(self):
-        return f"{self.name} (コスト: {self.cost}, タイプ: {self.card_type}, ダメージ: {self.damage}, Vulnerable: {self.vulnerable_turns})"
