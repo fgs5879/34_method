@@ -2,6 +2,7 @@
 from Card import Card
 from CardGame import CardGame
 from Simulation import Simulation
+import cProfile
 
 def main():
     # ゲーム状態のシミュレート（手札、エナジー、カード等）
@@ -12,7 +13,7 @@ def main():
     [Card("Ascender's_Bane",display_name="アセンダーの災厄", usable=False, card_type='curse')]  # Ascender's Bane 1枚
     )
     # 初期ゲーム状態を作成
-    game = CardGame(deck, MAX_ENERGY=4)
+    game = CardGame(deck, MAX_ENERGY=3)
     simulation = Simulation(game, num_turns=3, trials=50, lookahead_turns=2)
     
     #シミュレート
