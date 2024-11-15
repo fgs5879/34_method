@@ -98,10 +98,10 @@ def concurrent_full_search(game:CardGame, trials:int, lookahead_turns:int):
     # 平均ダメージ ± 標準偏差の数値をプロットに追加
     for i in range(len(turn_indices)):
         # 平均ダメージ ± 標準偏差
-        plt.text(turn_indices[i], mean_plus_std_dev[i], f'{mean_plus_std_dev[i]:.2f}', ha='left', va='bottom', fontsize=12, color='red')
-        plt.text(turn_indices[i], mean_minus_std_dev[i], f'{mean_minus_std_dev[i]:.2f}', ha='left', va='top', fontsize=12, color='red')
+        plt.text(turn_indices[i], mean_plus_std_dev[i], f'{mean_plus_std_dev[i]:.2f}', ha='left', va='bottom', fontsize=20, color='red')
+        plt.text(turn_indices[i], mean_minus_std_dev[i], f'{mean_minus_std_dev[i]:.2f}', ha='left', va='top', fontsize=20, color='red')
         # 平均ダメージの数字
-        plt.text(turn_indices[i], mean_damage_list[i], f'{mean_damage_list[i]:.2f}', ha='center', va='bottom', fontsize=12, color='blue')
+        plt.text(turn_indices[i], mean_damage_list[i], f'{mean_damage_list[i]:.2f}', ha='center', va='bottom', fontsize=20, color='blue')
     # グリッド表示
     plt.grid(True)
     
@@ -132,12 +132,13 @@ def full_search_trial(game:CardGame, trial:int, lookahead_turns:int):
         #それぞれの選択ごとにゲームの先読みをする。
         for played_card in playable_cards:
             lookuped_damage_list.append((lookup(duplicate_game(this_game), played_card, lookahead_turns+this_game.turn_num),played_card))
-        for l, j in lookuped_damage_list:
-            if(j  == "end_turn"):
-                log_lines.append(str(l)+":"+str(j))
-            else:
-                log_lines.append(str(l)+":"+str(j.display_name))
-        log_lines.append("\n")
+        #lookuped_damageの出力
+        # for l, j in lookuped_damage_list:
+        #     if(j  == "end_turn"):
+        #         log_lines.append(str(l)+":"+str(j))
+        #     else:
+        #         log_lines.append(str(l)+":"+str(j.display_name))
+        # log_lines.append("\n")
         max_damage, best_choice = max(lookuped_damage_list, key=lambda x: x[0])
         # 'best_choice'を実行する
         if best_choice == "end_turn":
