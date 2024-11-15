@@ -1,7 +1,7 @@
 # main.py
 from Card import Card
 from CardGame import CardGame
-from Simulation import Simulation
+import Simulation
 import cProfile
 
 def main():
@@ -14,10 +14,9 @@ def main():
     )
     # 初期ゲーム状態を作成
     game = CardGame(deck, MAX_ENERGY=3)
-    simulation = Simulation(game, num_turns=3, trials=50, lookahead_turns=2)
     
     #シミュレート
-    simulation.full_search_trial()
+    Simulation.concurrent_full_search(game, num_turns=3, trials=30, lookahead_turns=2)
 
 if __name__ == "__main__":
     main()
