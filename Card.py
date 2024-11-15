@@ -1,5 +1,5 @@
 class Card:
-    def __init__(self, name,card_type,cost=0, damage=0, vulnerable_turns=0, draw_num=0, display_name = "", usable=True):
+    def __init__(self, name,card_type,cost=0, damage=0, vulnerable_turns=0, draw_num=0, display_name = "", usable=True, ethereal=False):
         self.name = name
         #display_nameの指定が無い場合プログラムが使用するカード名を使う
         if display_name == "":
@@ -12,3 +12,4 @@ class Card:
         self.vulnerable_turns = vulnerable_turns  # vulnerableターン数（攻撃時使用）
         self.draw_num = draw_num #ドロー数
         self.usable = usable #使用可能かどうか
+        self.ethereal = ethereal #エセリアル

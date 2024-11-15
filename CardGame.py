@@ -98,8 +98,7 @@ class CardGame:
         if(self.e_vulnerable):
             self.e_vulnerable -=1
         for card in self.hand[:]:
-            if card.name == "Ascender's_Bane":
-                self.hand.remove(card)
+            if card.ethereal:
                 self.exhaust_pile.append(card)  # exhaust_pileに移動
         self.discard_pile.extend(self.hand)
         self.hand.clear()
