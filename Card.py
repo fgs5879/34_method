@@ -7,7 +7,7 @@ class Card:
         else:
             self.display_name = display_name
         self.cost = cost
-        self.card_type = card_type  # attack, skill, power, curse
+        self.card_type = card_type  # attack, skill, power, curse, status
         self.damage = damage  # ダメージ（attackタイプのみ）
         self.vulnerable_turns = vulnerable_turns  # vulnerableターン数（攻撃時使用）
         self.draw_num = draw_num #ドロー数
