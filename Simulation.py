@@ -117,7 +117,7 @@ def full_search_trial(game:CardGame, trial:int, lookahead_turns:int):
     log_lines = []        
     #それぞれのtrialごとにゲームを作る
     this_game = CardGame(game.deck, game.MAX_ENERGY, game.END_TURN_NUM)
-    log_lines.append(f"\n=== 1 ターン目開始===\n")
+    log_lines.append(f"=== 1 ターン目開始===\n")
     this_game.start_turn()
     
     #指定ターン超過までwhileループし戦闘継続
@@ -145,7 +145,7 @@ def full_search_trial(game:CardGame, trial:int, lookahead_turns:int):
             each_turn_damage_list.append(this_game.total_damage)
             this_game.end_turn()
             if this_game.turn_num > game.END_TURN_NUM:
-                log_lines.append(f"\n=== 試行 {trial+1} 回目終了===\n与えた合計ダメージ:{this_game.total_damage}\n")
+                log_lines.append(f"\n=== 試行 {trial+1} 回目終了===\n与えた合計ダメージ:{this_game.total_damage}\n--------------------------------------\n")
             else:
                 this_game.start_turn()
                 log_lines.append(f"\n=== これまでのダメージ:{this_game.total_damage}===")
