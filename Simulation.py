@@ -1,30 +1,30 @@
 # Simulation.py
-import copy,statistics,time,matplotlib.pyplot as plt
+import statistics,time,tqdm,matplotlib.pyplot as plt
 from Lookup import lookup
 from utilies import get_playable_cards, duplicate_game
 from CardGame import CardGame
-from tqdm import tqdm
 import concurrent.futures
 def concurrent_full_search(game:CardGame, trials:int, lookahead_turns:int):
     """並列処理を行う"""
     start_time = time.time()
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        # `executor.map` で full_search_trial を実行
-        results = list(
-            tqdm(
-                executor.map(
-                    full_search_trial,
-                    [game] * trials,            # game を試行回数分コピー
-                    range(trials),              # 各試行の trial_num
-                    [lookahead_turns] * trials  # lookahead_turns を試行回数分コピー
-                ),
-                total=trials, desc="Progress"
-            )
-        )
-    
-    # results を展開
-    battle_logs = [result[0] for result in results]  # log_lines を収集
-    each_trial_damage_list = [result[1] for result in results]  # each_turn_damage_list を収集
+        # タスクを submit で登録
+        futures = [
+            executor.submit(full_search_trial, game, trial, lookahead_turns)
+            for trial in range(trials)
+        ]
+        
+        battle_logs = []
+        each_trial_damage_list = []
+        
+        # タスクが完了した順に結果を受け取る
+        for future in tqdm.tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc="Processing trials"):
+            result = future.result()
+            battle_logs.append(result[0])
+            each_trial_damage_list.append(result[1])
+    # # results を展開
+    # battle_logs = [result[0] for result in results]  # log_lines を収集
+    # each_trial_damage_list = [result[1] for result in results]  # each_turn_damage_list を収集
     
     with open("logfile/battle_log.txt", "w",encoding="utf-8") as file:
         flat_battle_logs = [line for log in battle_logs for line in log]
@@ -127,11 +127,17 @@ def full_search_trial(game:CardGame, trial:int, lookahead_turns:int):
         #使用可能カードのリスト取得(end_turnを含む)
         playable_cards = get_playable_cards(this_game.hand, this_game.energy)
         #それぞれの選択ごとにゲームの先読みし、先読み先で与えたダメージをlistに格納。最も効果が高い選択を推測する
-        #len(playable_cards) <= 1だと、playable_cards = ["end_turn"]であり、ターンエンドするしかない
+        #len(playable_cards) <= 1だと、playable_cards = はエンドターンだけであり、ターンエンドするしかない
         lookuped_damage_list = []
         #それぞれの選択ごとにゲームの先読みをする。
-        for played_card in playable_cards:
-            lookuped_damage_list.append((lookup(duplicate_game(this_game), played_card, lookahead_turns+this_game.turn_num),played_card))
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = [
+                executor.submit(lookup, this_game, played_card, lookahead_turns+this_game.turn_num)
+                for played_card in playable_cards
+                ]
+            lookuped_damage_list = [future.result() for future in futures]
+        # for played_card in playable_cards:
+        #     lookuped_damage_list.append((lookup(duplicate_game(this_game), played_card, lookahead_turns+this_game.turn_num),played_card))
         #lookuped_damageの出力
         # for l, j in lookuped_damage_list:
         #     if(j  == "end_turn"):
@@ -141,7 +147,7 @@ def full_search_trial(game:CardGame, trial:int, lookahead_turns:int):
         # log_lines.append("\n")
         max_damage, best_choice = max(lookuped_damage_list, key=lambda x: x[0])
         # 'best_choice'を実行する
-        if best_choice == "end_turn":
+        if best_choice.name == "end_turn":
             each_turn_damage_list.append(this_game.total_damage)
             this_game.end_turn()
             if this_game.turn_num > game.END_TURN_NUM:
@@ -151,8 +157,8 @@ def full_search_trial(game:CardGame, trial:int, lookahead_turns:int):
                 log_lines.append(f"\n=== これまでのダメージ:{this_game.total_damage}===")
                 if(this_game.e_vulnerable>0):
                     log_lines.append(f"\n=== 弱体:{this_game.e_vulnerable}===")
-                if(this_game.player_strength>0):
-                    log_lines.append(f"\n=== 筋力:{this_game.player_strength}===\n")
+                if(this_game.p_strength>0):
+                    log_lines.append(f"\n=== 筋力:{this_game.p_strength}===\n")
                 log_lines.append(f"\n==={this_game.turn_num}ターン目開始===\n")  # ターン終了を記録
         else:
             log_lines.append(f"使用:{best_choice.display_name}\n")  # 使用したカードの名前を記録

@@ -1,4 +1,4 @@
-import copy
+import copy, Card
 #他の自作pyファイルからimportされる関数を記述する
 def get_playable_cards(hand, energy):
         
@@ -8,9 +8,13 @@ def get_playable_cards(hand, energy):
         #コストと名前の一致するカードをまとめる。
         unique_hand = remove_duplicate_cards(hand)
 
-        playable_cards = ["end_turn"]
+        playable_cards = [Card.Card("end_turn", card_type="end_turn")]
         #使用可能カードリストを得る
+        
         for card in unique_hand:
+            # if card.name == "Power_Through":
+            #      return [card]
+
             if card.usable == True and card.cost <= energy:
                 playable_cards.append(card)
 

@@ -20,9 +20,10 @@ class CardGame:
         self.exhaust_pile = []#廃棄したカード
         self.energy = self.MAX_ENERGY#エナジー
         self.total_damage = 0#ダメージの合計
+        self.p_block = 0#プレイヤーのブロック
 
         #バフデバフ(プレイヤー)
-        self.player_strength = 0#プレイヤーの筋力
+        self.p_strength = 0#プレイヤーの筋力
         self.double_tap = 0#ダブルタップ
 
         #バフデバフ(サンドバッグ)
@@ -57,13 +58,21 @@ class CardGame:
                     return 0  # デッキも捨て札も空ならドローできない
             card = self.deck.pop()
             self.hand.append(card)
-    def add_card(self, card):
-        """指定したカードを手札に追加する(ドローではない)"""
-        #手札が10枚以上なら捨て札に追加
-        if(len(self.hand) >= 10):
+    def add_card(self, card, place:str):
+        """指定したカードをplaceで指定した場所に追加する"""
+        #手札
+        if place == "hand":
+            #手札が10枚以上なら捨て札に追加
+            if(len(self.hand) >= 10):
+                self.discard_pile.append(card)
+            else:
+                self.hand.append(card)
+        #捨て札
+        elif place == "discard_pile":
             self.discard_pile.append(card)
-        else:
-            self.hand.append(card)
+        #山札
+        elif place == "draw_pile":
+            self.deck.insert(random.randint(0, len(self.deck)), card)
     def use_card(self, card):
         if card.usable == False:
             return  #このカードは使用不可
@@ -78,13 +87,20 @@ class CardGame:
             
             if card.card_type == 'attack':
                 for _ in range(min(self.double_tap+1,2)):
-                    damage = self.calculate_damage(card.damage + self.player_strength) 
+                    #ボディスラム
+                    if card.name in {"Body_Slam", "Body_Slam+"}:
+                        card.damage = self.p_block
+                    damage = self.calculate_damage(card.damage + self.p_strength)   
+                    #焼身
+                    if card.name in{"Immolate", "Immolate+"}:
+                        self.add_card(Card("Burn",display_name="火傷", usable=False,card_type="status"), place="discard_pile")
                     # カードにvulnerableターン数がある場合に適用
                     if card.vulnerable_turns > 0:
                         self.apply_vulnerable(card.vulnerable_turns) 
                     # ダメージの加算
                     self.total_damage += damage
-
+                    #ブロック増加
+                    self.p_block += card.block
                     # カードを手札から捨て札へ移動
                     # カードの属性で同じものを削除
                     # ダブルタップで起動した2回目のカードにはこの効果を適用しない
@@ -97,18 +113,17 @@ class CardGame:
                     else:
                         self.double_tap -=1
             elif card.card_type == 'skill':
+                self.p_block += card.block
                 #やせ我慢の負傷2枚追加処理
-                if card.name == "Power_Through" or card.name == "Power_Through+":
-                    wound = Card("Wound",display_name="負傷",card_type="status",usable=False)
+                if card.name in {"Power_Through", "Power_Through+"}:
                     for _ in range(2):
-                        self.add_card(wound)
+                        self.add_card(Card("Wound",display_name="負傷",card_type="status",usable=False),place="hand")
 
                 #ダブルタップ
-                if card.name == "Double_Tap" or card.name == "Double_Tap+":
-                    if card.name == "Double_Tap":
+                if card.name in {"Double_Tap", "Double_Tap+"}:
+                    if card.name == "Double_Tap+":
                         self.double_tap += 1
-                    else:
-                        self.double_tap += 2
+                    self.double_tap += 1
 
                 # カードを手札から捨て札へ移動
                 # カードの属性で同じものを削除
@@ -120,13 +135,15 @@ class CardGame:
 
             elif card.card_type == 'power':
                 # Inflameカードを使ったときのstrength増加
-                if card.name == "Inflame":
-                    self.player_strength += 2  # strengthを2増加
+                if card.name in {"Inflame","Inflame+"}:
+                    if card.name =="Inflame+":
+                        self.p_strength += 1
+                    self.p_strength += 2  # strengthを2増加
                     # カードの属性で同じものを削除
-                    for i, c in enumerate(self.hand):
-                        if c.name == card.name and c.cost == card.cost and c.card_type == card.card_type:
-                            del self.hand[i]
-                            break
+                for i, c in enumerate(self.hand):
+                    if c.name == card.name and c.cost == card.cost and c.card_type == card.card_type:
+                        del self.hand[i]
+                        break
             #カードドロー
             if card.draw_num > 0:
                 self.draw_card(card.draw_num)
@@ -137,6 +154,8 @@ class CardGame:
             self.e_vulnerable -=1
         #ダブルタップを0にする
         self.double_tap = 0
+        #プレイヤーのブロックを0にする
+        self.p_block = 0
         for card in self.hand[:]:
             if card.ethereal:
                 self.exhaust_pile.append(card)  # exhaust_pileに移動
