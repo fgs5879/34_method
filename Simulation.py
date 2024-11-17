@@ -2,7 +2,8 @@
 import statistics,time,tqdm,matplotlib.pyplot as plt
 from Lookup import lookup
 from utilies import get_playable_cards, duplicate_game
-from CardGame import CardGame
+from CardGame import *
+from card_details import *
 import concurrent.futures
 def concurrent_full_search(game:CardGame, trials:int, lookahead_turns:int):
     """並列処理を行う"""
@@ -54,7 +55,8 @@ def concurrent_full_search(game:CardGame, trials:int, lookahead_turns:int):
     seconds = battle_time % 60  # 残りの秒数
     formatted_seconds = round(seconds, 2)  # 小数第2位まで表示
     statistics_lines.append(f"戦闘時間:{hours}時間{minutes}分{formatted_seconds}秒\n")
-    statistics_lines.append("デッキ: " + ", ".join([card.display_name for card in game.deck]) + "\n")
+    statistics_lines.append("デッキ: " + ", ".join([get_card_detail(card["name"], "display_name") for card in game.draw_pile]) + "\n")
+
     
     # 統計結果をファイルに書き込み
     statistics_lines.append("各ターンのダメージ統計:\n\n")
@@ -104,40 +106,35 @@ def concurrent_full_search(game:CardGame, trials:int, lookahead_turns:int):
         plt.text(turn_indices[i], mean_damage_list[i], f'{mean_damage_list[i]:.2f}', ha='center', va='bottom', fontsize=20, color='blue')
     # グリッド表示
     plt.grid(True)
-    
     # グラフを表示
     plt.show()
             
-
-
 def full_search_trial(game:CardGame, trial:int, lookahead_turns:int):
+    random.shuffle(game.draw_pile)
     #統計用に各ターンごとに与えたダメージの合計を記録
     each_turn_damage_list = []
     #ログ記録用のリスト
     log_lines = []        
-    #それぞれのtrialごとにゲームを作る
-    this_game = CardGame(game.deck, game.MAX_ENERGY, game.END_TURN_NUM)
     log_lines.append(f"=== 1 ターン目開始===\n")
-    this_game.start_turn()
+    
+    start_turn(game)
     
     #指定ターン超過までwhileループし戦闘継続
-    while this_game.turn_num <= game.END_TURN_NUM:
+    while game.turn_num <= game.END_TURN_NUM:
         #手札表示
-        log_lines.append("手札: " + ", ".join([card.display_name for card in this_game.hand]) + "\n")
+        log_lines.append("手札: " + ", ".join([get_card_detail(card["name"],"display_name") for card in game.hand]) + "\n")
         #使用可能カードのリスト取得(end_turnを含む)
-        playable_cards = get_playable_cards(this_game.hand, this_game.energy)
+        playable_cards = get_playable_cards(game.hand, game.energy)
         #それぞれの選択ごとにゲームの先読みし、先読み先で与えたダメージをlistに格納。最も効果が高い選択を推測する
         #len(playable_cards) <= 1だと、playable_cards = はエンドターンだけであり、ターンエンドするしかない
         lookuped_damage_list = []
         #それぞれの選択ごとにゲームの先読みをする。
-        with concurrent.futures.ProcessPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(lookup, this_game, played_card, lookahead_turns+this_game.turn_num)
+                executor.submit(lookup, duplicate_game(game), played_card, lookahead_turns+game.turn_num)
                 for played_card in playable_cards
                 ]
             lookuped_damage_list = [future.result() for future in futures]
-        # for played_card in playable_cards:
-        #     lookuped_damage_list.append((lookup(duplicate_game(this_game), played_card, lookahead_turns+this_game.turn_num),played_card))
         #lookuped_damageの出力
         # for l, j in lookuped_damage_list:
         #     if(j  == "end_turn"):
@@ -147,20 +144,20 @@ def full_search_trial(game:CardGame, trial:int, lookahead_turns:int):
         # log_lines.append("\n")
         max_damage, best_choice = max(lookuped_damage_list, key=lambda x: x[0])
         # 'best_choice'を実行する
-        if best_choice.name == "end_turn":
-            each_turn_damage_list.append(this_game.total_damage)
-            this_game.end_turn()
-            if this_game.turn_num > game.END_TURN_NUM:
-                log_lines.append(f"\n=== 試行 {trial+1} 回目終了===\n与えた合計ダメージ:{this_game.total_damage}\n--------------------------------------\n")
+        if best_choice["name"] == "end_turn":
+            each_turn_damage_list.append(game.total_damage)
+            end_turn(game)
+            if game.turn_num > game.END_TURN_NUM:
+                log_lines.append(f"\n=== 試行 {trial+1} 回目終了===\n与えた合計ダメージ:{game.total_damage}\n--------------------------------------\n")
             else:
-                this_game.start_turn()
-                log_lines.append(f"\n=== これまでのダメージ:{this_game.total_damage}===")
-                if(this_game.e_vulnerable>0):
-                    log_lines.append(f"\n=== 弱体:{this_game.e_vulnerable}===")
-                if(this_game.p_strength>0):
-                    log_lines.append(f"\n=== 筋力:{this_game.p_strength}===\n")
-                log_lines.append(f"\n==={this_game.turn_num}ターン目開始===\n")  # ターン終了を記録
+                start_turn(game)
+                log_lines.append(f"\n=== これまでのダメージ:{game.total_damage}===")
+                if(game.e_vulnerable>0):
+                    log_lines.append(f"\n=== 弱体:{game.e_vulnerable}===")
+                if(game.p_strength>0):
+                    log_lines.append(f"\n=== 筋力:{game.p_strength}===\n")
+                log_lines.append(f"\n==={game.turn_num}ターン目開始===\n")  # ターン終了を記録
         else:
-            log_lines.append(f"使用:{best_choice.display_name}\n")  # 使用したカードの名前を記録
-            this_game.use_card(best_choice)
+            log_lines.append(f"使用: {get_card_detail(best_choice['name'], 'display_name')}\n")  # 使用したカードの名前を記録
+            use_card(game,best_choice)
     return (log_lines, each_turn_damage_list)
