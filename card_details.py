@@ -11,10 +11,27 @@ DEFAULT_CARD_DETAILS = {
     "draw_num":0
 }
 CARD_DETAILS = {
-    # 既存のカード
-    "Strike": {"display_name": "ストライク", "card_type": "attack", "damage": 6},
-    "Defend": {"display_name": "防御", "card_type": "skill", "block": 5},
-    "Bash": {"display_name": "強打", "card_type": "attack", "damage": 8, "vulnerable_turns": 2},
+    "Strike": {
+        "display_name": "ストライク",
+        "card_type": "attack", 
+        "damage": 6
+        },
+    "Strike+": {
+        "display_name": "ストライク+",
+        "card_type": "attack", 
+        "damage": 9
+        },
+    "Defend": {
+        "display_name": "防御", 
+        "card_type": "skill", 
+        "block": 5
+        },
+    "Bash": {
+        "display_name": "強打", 
+        "card_type": "attack", 
+        "damage": 8, 
+        "vulnerable_turns": 2
+        },
     
     # 新しいカード
     "Ascender's_Bane": {
@@ -103,6 +120,13 @@ CARD_DETAILS = {
         "display_name":"火傷",
         "card_type":"status",
         "usable":False
+    }
+    ,
+    "Thunderclap":{
+        "display_name":"サンダークラップ",
+        "card_type":"attack",
+        "damage":4,
+        "vulnerable_turns":1
     }
 }
 
