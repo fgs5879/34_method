@@ -3,10 +3,11 @@ import random, copy, math
 from card_details import *
 class CardGame:
 
-    def __init__(self, deck, MAX_ENERGY, END_TURN_NUM):
+    def __init__(self, deck, MAX_ENERGY, END_TURN_NUM, name=""):
         self.original_deck = deck
         self.MAX_ENERGY_ORIGINAL = MAX_ENERGY
         self.END_TURN_NUM = END_TURN_NUM
+        self.name = name
         self.draw_pile = copy.deepcopy(self.original_deck)#山札
         self.MAX_ENERGY = self.MAX_ENERGY_ORIGINAL#最大エナジー
         random.shuffle(self.draw_pile)#山札をシャッフル
